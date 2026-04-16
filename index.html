@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Renomeador de Guias PDF</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Renomeador de Guias PDF</h1>
+      <p>Faça upload dos PDFs e baixe as versões renomeadas como <strong>NomePaciente_Guia.pdf</strong>.</p>
+    </header>
+
+    <section class="upload-section">
+      <label for="pdf-input" class="upload-label">
+        Selecione um ou mais arquivos PDF
+        <input id="pdf-input" type="file" accept="application/pdf" multiple />
+      </label>
+      <button id="process-button" type="button" disabled>Processar PDFs</button>
+    </section>
+
+    <section id="output" class="output"></section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.123/pdf.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
