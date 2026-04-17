@@ -1,154 +1,317 @@
-const input = document.getElementById("pdf-input");
-const processButton = document.getElementById("process-button");
-const output = document.getElementById("output");
+const UI_ELEMENTS = {
+  input: document.getElementById("pdf-input"),
+  processButton: document.getElementById("process-button"),
+  output: document.getElementById("output"),
+  progressContainer: document.getElementById("progress-container"),
+  progressBar: document.getElementById("progress-bar"),
+  progressText: document.getElementById("progress-text"),
+};
 
-const PATIENT_PATTERNS = [
-  /Nome do Beneficiário\s*[:\-]?\s*(.+?)\s*(?:\r?\n|$)/gi,
-  /Nome do Titular\s*[:\-]?\s*(.+?)\s*(?:\r?\n|$)/gi,
-  /Nome do paciente\s*[:\-]?\s*(.+?)\s*(?:\r?\n|$)/gi,
-  /Paciente\s*[:\-]?\s*(.+?)\s*(?:\r?\n|$)/gi,
-  /Beneficiário\s*[:\-]?\s*(.+?)\s*(?:\r?\n|$)/gi,
-];
+const PATTERNS = {
+  patient: [
+    /Nome do Beneficiário\s*[:\-]?\s*\n?\s*(.+?)\s*(?:\r?\n|$)/gi,
+    /Nome do Titular\s*[:\-]?\s*\n?\s*(.+?)\s*(?:\r?\n|$)/gi,
+    /Nome do paciente\s*[:\-]?\s*\n?\s*(.+?)\s*(?:\r?\n|$)/gi,
+    /Paciente\s*[:\-]?\s*\n?\s*(.+?)\s*(?:\r?\n|$)/gi,
+    /Beneficiário\s*[:\-]?\s*\n?\s*(.+?)\s*(?:\r?\n|$)/gi,
+    /Nome\s+do\s+Beneficiário\s*\n?\s*(.+?)\s*(?:\r?\n|$)/gi,
+  ],
 
-const GUIDE_PATTERNS = [
-  /Guia\s*(?:N(?:º|o|º?)|#)?\s*[:\-]?\s*(\d+)/gi,
-  /N[oº] da guia\s*[:\-]?\s*(\d+)/gi,
-  /Número da guia\s*[:\-]?\s*(\d+)/gi,
-  /Guia TISS\s*[:\-]?\s*(\d+)/gi,
-];
+  guide: [
+    /Número da Guia no Prestador\s*[:\-]?\s*\n?\s*(\d+)/gi,
+    /Número Guia Prestador\s*[:\-]?\s*\n?\s*(\d+)/gi,
+    /Número da guia principal\s*[:\-]?\s*\n?\s*(\d+)/gi,
+    /N[ºo]\s*Guia Operadora\s*[:\-]?\s*\n?\s*(\d+)/gi,
+    /Guia TISS\s*[:\-]?\s*\n?\s*(\d+)/gi,
+    /Guia\s*(?:N(?:º|o|º?)|#)?\s*[:\-]?\s*\n?\s*(\d+)/gi,
+    /Número da guia\s*[:\-]?\s*\n?\s*(\d+)/gi,
+  ],
+};
 
-const INVALID_FILENAME_CHARS = /[<>:\"/\\|?*]/g;
+class PdfTextExtractor {
+  async extract(file) {
+    const buffer = await file.arrayBuffer();
 
-input.addEventListener("change", () => {
-  processButton.disabled = input.files.length === 0;
-});
+    const pdf = await pdfjsLib.getDocument({
+      data: new Uint8Array(buffer),
+    }).promise;
 
-processButton.addEventListener("click", async () => {
-  output.innerHTML = "";
-  const files = Array.from(input.files);
+    const pages = await Promise.all(
+      Array.from({ length: pdf.numPages }, (_, index) =>
+        pdf.getPage(index + 1).then(page => page.getTextContent())
+      )
+    );
 
-  if (!files.length) {
-    return;
+    const text = pages
+      .map(page =>
+        page.items
+          .map(item => item.str.trim())
+          .filter(Boolean)
+          .join("\n")
+      )
+      .join("\n");
+
+    return {
+      text: this.normalize(text),
+      buffer,
+    };
   }
 
-  processButton.disabled = true;
-  processButton.textContent = "Processando...";
+  normalize(text) {
+    return text
+      .replace(/\s{2,}/g, " ")
+      .replace(/\n\s+/g, "\n")
+      .trim();
+  }
+}
 
-  for (const file of files) {
-    await processFile(file);
+class PatientDataExtractor {
+  constructor(patterns) {
+    this.patterns = patterns;
   }
 
-  processButton.textContent = "Processar PDFs";
-  processButton.disabled = false;
-});
+  extract(text) {
+    return {
+      patient:
+        this.find(text, this.patterns.patient) ||
+        this.findByLabel(text, "Nome do Beneficiário") ||
+        this.findByLabel(text, "Paciente"),
 
-async function processFile(file) {
-  const card = document.createElement("div");
-  card.className = "card";
-  const title = document.createElement("h2");
-  title.textContent = file.name;
-  card.appendChild(title);
+      guide:
+        this.find(text, this.patterns.guide) ||
+        this.findByLabel(text, "Número da Guia no Prestador") ||
+        this.findByLabel(text, "Número da guia"),
+    };
+  }
 
-  try {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
-    const text = await extractTextFromPdf(pdf);
+  find(text, patterns) {
+    for (const regex of patterns) {
+      const match = regex.exec(text);
+      regex.lastIndex = 0;
 
-    const patients = findMatches(text, PATIENT_PATTERNS);
-    const guides = findMatches(text, GUIDE_PATTERNS);
-    const [patient, guide] = selectPair(patients, guides);
-
-    if (!patient && !guide) {
-      const error = document.createElement("p");
-      error.className = "error";
-      error.textContent = "Não foi possível extrair o nome do paciente ou número da guia.";
-      card.appendChild(error);
-      output.appendChild(card);
-      return;
+      if (match?.[1]) return match[1].trim();
     }
 
-    const safePatient = normalizeName(patient || pathWithoutExtension(file.name));
-    const safeGuide = normalizeName(guide || "guia");
-    const newFilename = `${safePatient}_${safeGuide}${getExtension(file.name)}`;
+    return "";
+  }
 
-    const info = document.createElement("p");
-    info.textContent = `Nome: ${patient || "(não encontrado)"} | Guia: ${guide || "(não encontrado)"}`;
-    card.appendChild(info);
+  findByLabel(text, label) {
+    const lines = text
+      .split("\n")
+      .map(line => line.trim())
+      .filter(Boolean);
 
-    const blob = new Blob([arrayBuffer], { type: "application/pdf" });
+    const index = lines.findIndex(line =>
+      line.toLowerCase().includes(label.toLowerCase())
+    );
+
+    if (index >= 0 && lines[index + 1]) {
+      return lines[index + 1].trim();
+    }
+
+    return "";
+  }
+}
+
+class FilenameGenerator {
+  static INVALID_CHARS = /[<>:"/\\|?*]/g;
+
+  generate(originalName, patient, guide) {
+    const safePatient = this.sanitize(
+      patient || this.removeExtension(originalName)
+    );
+
+    const safeGuide = this.sanitize(
+      guide || "guia"
+    );
+
+    return `${safePatient}_${safeGuide}${this.extension(originalName)}`;
+  }
+
+  sanitize(value) {
+    return value
+      .trim()
+      .replace(/\s+/g, "_")
+      .replace(FilenameGenerator.INVALID_CHARS, "")
+      .slice(0, 180);
+  }
+
+  extension(filename) {
+    const index = filename.lastIndexOf(".");
+    return index >= 0 ? filename.slice(index) : ".pdf";
+  }
+
+  removeExtension(filename) {
+    const index = filename.lastIndexOf(".");
+    return index >= 0 ? filename.slice(0, index) : filename;
+  }
+}
+
+class UIRenderer {
+  constructor(elements) {
+    this.ui = elements;
+  }
+
+  reset() {
+    this.ui.output.innerHTML = "";
+  }
+
+  setLoading(isLoading) {
+    this.ui.processButton.disabled = isLoading;
+    this.ui.processButton.textContent = isLoading
+      ? "Processando..."
+      : "Processar PDFs";
+  }
+
+  showProgress(total) {
+    this.ui.progressContainer.classList.remove("hidden");
+    this.updateProgress(0, total);
+  }
+
+  updateProgress(current, total) {
+    const percentage = Math.round((current / total) * 100);
+    this.ui.progressBar.style.width = `${percentage}%`;
+    this.ui.progressText.textContent = `${current} / ${total}`;
+  }
+
+  hideProgress() {
+    setTimeout(() => {
+      this.ui.progressContainer.classList.add("hidden");
+    }, 600);
+  }
+
+  renderResult(fileName, patient, guide, buffer, generatedName) {
+    const card = this.createCard(fileName);
+
+    card.appendChild(this.createText(
+      `Nome: ${patient || "(não encontrado)"} | Guia: ${guide || "(não encontrado)"}`
+    ));
+
+    card.appendChild(this.createDownloadLink(buffer, generatedName));
+
+    this.ui.output.appendChild(card);
+  }
+
+  renderError(fileName, message) {
+    const card = this.createCard(fileName);
+    card.appendChild(this.createText(message, "error"));
+    this.ui.output.appendChild(card);
+  }
+
+  createCard(title) {
+    const card = document.createElement("div");
+    card.className = "card";
+
+    const heading = document.createElement("h2");
+    heading.textContent = title;
+
+    card.appendChild(heading);
+
+    return card;
+  }
+
+  createText(text, className = "") {
+    const paragraph = document.createElement("p");
+    paragraph.textContent = text;
+
+    if (className) {
+      paragraph.className = className;
+    }
+
+    return paragraph;
+  }
+
+  createDownloadLink(buffer, fileName) {
+    const blob = new Blob([buffer], { type: "application/pdf" });
+
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = newFilename;
+    link.download = fileName;
     link.className = "download-link";
-    link.textContent = `Baixar ${newFilename}`;
-    card.appendChild(link);
-    output.appendChild(card);
-  } catch (error) {
-    const err = document.createElement("p");
-    err.className = "error";
-    err.textContent = `Erro ao processar o arquivo: ${error.message}`;
-    card.appendChild(err);
-    output.appendChild(card);
+    link.textContent = `Baixar ${fileName}`;
+
+    return link;
   }
 }
 
-function extractTextFromPdf(pdf) {
-  const pagePromises = [];
-  for (let pageIndex = 1; pageIndex <= pdf.numPages; pageIndex += 1) {
-    pagePromises.push(pdf.getPage(pageIndex).then((page) => page.getTextContent()));
+class PdfProcessorController {
+  constructor({ uiRenderer, textExtractor, dataExtractor, filenameGenerator }) {
+    this.ui = uiRenderer;
+    this.textExtractor = textExtractor;
+    this.dataExtractor = dataExtractor;
+    this.filenameGenerator = filenameGenerator;
   }
 
-  return Promise.all(pagePromises).then((pages) => pages.map((page) => page.items.map((item) => item.str).join(" ")).join("\n"));
-}
+  async process(files) {
+    this.ui.reset();
+    this.ui.setLoading(true);
+    this.ui.showProgress(files.length);
 
-function findMatches(text, patterns) {
-  const results = [];
-  for (const pattern of patterns) {
-    let match;
-    while ((match = pattern.exec(text)) !== null) {
-      const value = match[1].trim();
-      if (value && !results.includes(value)) {
-        results.push(value);
-      }
+    for (let i = 0; i < files.length; i++) {
+      await this.processFile(files[i]);
+      this.ui.updateProgress(i + 1, files.length);
     }
-    pattern.lastIndex = 0;
-  }
-  return results;
-}
 
-function selectPair(patients, guides) {
-  if (patients.length > 0 && guides.length > 0) {
-    return [patients[0], guides[0]];
+    this.ui.hideProgress();
+    this.ui.setLoading(false);
   }
-  if (patients.length > 0) {
-    return [patients[0], ""]; 
+
+  async processFile(file) {
+    try {
+      const { text, buffer } = await this.textExtractor.extract(file);
+      const { patient, guide } = this.dataExtractor.extract(text);
+
+      if (!patient && !guide) {
+        this.ui.renderError(
+          file.name,
+          "Não foi possível extrair o nome do paciente ou número da guia."
+        );
+        return;
+      }
+
+      const generatedName = this.filenameGenerator.generate(
+        file.name,
+        patient,
+        guide
+      );
+
+      this.ui.renderResult(
+        file.name,
+        patient,
+        guide,
+        buffer,
+        generatedName
+      );
+    } catch (error) {
+      this.ui.renderError(
+        file.name,
+        `Erro ao processar: ${error.message}`
+      );
+    }
   }
-  if (guides.length > 0) {
-    return ["", guides[0]];
-  }
-  return ["", ""];
-}
-
-function normalizeName(value) {
-  return value
-    .trim()
-    .replace(/\s+/g, "_")
-    .replace(INVALID_FILENAME_CHARS, "")
-    .slice(0, 180);
-}
-
-function getExtension(filename) {
-  const index = filename.lastIndexOf(".");
-  return index >= 0 ? filename.slice(index) : ".pdf";
-}
-
-function pathWithoutExtension(filename) {
-  const index = filename.lastIndexOf(".");
-  return index >= 0 ? filename.slice(0, index) : filename;
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-  if (pdfjsLib && pdfjsLib.GlobalWorkerOptions) {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.123/pdf.worker.min.js";
+  if (window.pdfjsLib?.GlobalWorkerOptions) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.123/pdf.worker.min.js";
   }
+
+  const uiRenderer = new UIRenderer(UI_ELEMENTS);
+
+  const controller = new PdfProcessorController({
+    uiRenderer,
+    textExtractor: new PdfTextExtractor(),
+    dataExtractor: new PatientDataExtractor(PATTERNS),
+    filenameGenerator: new FilenameGenerator(),
+  });
+
+  UI_ELEMENTS.input.addEventListener("change", () => {
+    UI_ELEMENTS.processButton.disabled =
+      UI_ELEMENTS.input.files.length === 0;
+  });
+
+  UI_ELEMENTS.processButton.addEventListener("click", () => {
+    controller.process(Array.from(UI_ELEMENTS.input.files));
+  });
 });

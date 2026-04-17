@@ -3,28 +3,92 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+    name="description"
+    content="Ferramenta para renomear guias PDF automaticamente com nome da paciente e número da guia."
+  />
   <title>Renomeador de Guias PDF</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <main>
-    <header>
-      <h1>Renomeador de Guias PDF</h1>
-      <p>Faça upload dos PDFs e baixe as versões renomeadas como <strong>NomePaciente_Guia.pdf</strong>.</p>
+    <!-- HERO -->
+    <header class="hero">
+      <div class="hero-logo">
+        <div class="logo-mark" aria-hidden="true">
+          <div class="logo-eye"></div>
+          <span>H</span>
+        </div>
+
+        <div>
+          <h1>H.Olhos</h1>
+          <p class="hero-subtitle">
+            Renomeie guias de autorização e TISS diretamente no navegador.
+          </p>
+        </div>
+      </div>
+
+      <p class="hero-description">
+        Uma ferramenta web simples para transformar PDFs em arquivos prontos
+        com o nome da paciente e número da guia.
+      </p>
     </header>
 
-    <section class="upload-section">
+    <!-- UPLOAD -->
+    <section class="upload-section" aria-labelledby="upload-title">
+      <h2 id="upload-title" class="sr-only">Envio de arquivos PDF</h2>
+
       <label for="pdf-input" class="upload-label">
         Selecione um ou mais arquivos PDF
-        <input id="pdf-input" type="file" accept="application/pdf" multiple />
+        <input
+          id="pdf-input"
+          type="file"
+          accept="application/pdf"
+          multiple
+          aria-describedby="upload-help"
+        />
       </label>
-      <button id="process-button" type="button" disabled>Processar PDFs</button>
+
+      <p id="upload-help" class="sr-only">
+        Apenas arquivos PDF são aceitos.
+      </p>
+
+      <button id="process-button" type="button" disabled>
+        Processar PDFs
+      </button>
     </section>
 
-    <section id="output" class="output"></section>
+    <!-- PROGRESS -->
+    <section
+      id="progress-container"
+      class="progress-container hidden"
+      aria-live="polite"
+      aria-labelledby="progress-title"
+    >
+      <h2 id="progress-title" class="sr-only">Progresso do processamento</h2>
+
+      <div class="progress-header">
+        <span>Processando arquivos...</span>
+        <span id="progress-text">0 / 0</span>
+      </div>
+
+      <div class="progress-bar-background">
+        <div id="progress-bar" class="progress-bar"></div>
+      </div>
+    </section>
+
+    <!-- OUTPUT -->
+    <section
+      id="output"
+      class="output"
+      aria-live="polite"
+      aria-labelledby="output-title"
+    >
+      <h2 id="output-title" class="sr-only">Resultados do processamento</h2>
+    </section>
   </main>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.123/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.123/pdf.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

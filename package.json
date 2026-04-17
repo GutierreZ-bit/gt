@@ -1,16 +1,30 @@
 {
   "name": "rename-guides",
   "version": "1.0.0",
-  "description": "Renomeia PDFs de guias TISS ou autorização com base no nome do paciente e número da guia.",
+  "description": "Renomeia PDFs de guias TISS ou autorizações com base no nome do paciente e número da guia.",
   "type": "module",
   "main": "rename_guides.js",
   "bin": {
-    "rename-guides": "rename_guides.js"
+    "rename-guides": "./rename_guides.js"
   },
   "scripts": {
-    "start": "node rename_guides.js"
+    "start": "node rename_guides.js",
+    "cli": "node rename_guides.js"
   },
   "dependencies": {
     "pdf-parse": "^1.1.1"
+  },
+  "keywords": [
+    "pdf",
+    "rename",
+    "tiss",
+    "healthcare",
+    "automation",
+    "cli"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
   }
 }
