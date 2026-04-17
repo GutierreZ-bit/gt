@@ -1,3 +1,19 @@
+// Wait for PDF.js to be ready before initializing the app
+function waitForPdfJs(callback, maxAttempts = 50) {
+  if (typeof window !== "undefined" && window.pdfjsLib) {
+    callback();
+  } else if (maxAttempts > 0) {
+    setTimeout(() => waitForPdfJs(callback, maxAttempts - 1), 100);
+  } else {
+    console.error(
+      "PDF.js failed to load. Please check your internet connection and try again."
+    );
+    alert(
+      "Erro ao carregar PDF.js. Verifique sua conexão com a internet e recarregue a página."
+    );
+  }
+}
+
 const UI_ELEMENTS = {
   input: document.getElementById("pdf-input"),
   processButton: document.getElementById("process-button"),
@@ -292,26 +308,28 @@ class PdfProcessorController {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-  if (window.pdfjsLib?.GlobalWorkerOptions) {
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.123/pdf.worker.min.js";
-  }
+  waitForPdfJs(() => {
+    if (window.pdfjsLib?.GlobalWorkerOptions) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.123/pdf.worker.min.js";
+    }
 
-  const uiRenderer = new UIRenderer(UI_ELEMENTS);
+    const uiRenderer = new UIRenderer(UI_ELEMENTS);
 
-  const controller = new PdfProcessorController({
-    uiRenderer,
-    textExtractor: new PdfTextExtractor(),
-    dataExtractor: new PatientDataExtractor(PATTERNS),
-    filenameGenerator: new FilenameGenerator(),
-  });
+    const controller = new PdfProcessorController({
+      uiRenderer,
+      textExtractor: new PdfTextExtractor(),
+      dataExtractor: new PatientDataExtractor(PATTERNS),
+      filenameGenerator: new FilenameGenerator(),
+    });
 
-  UI_ELEMENTS.input.addEventListener("change", () => {
-    UI_ELEMENTS.processButton.disabled =
-      UI_ELEMENTS.input.files.length === 0;
-  });
+    UI_ELEMENTS.input.addEventListener("change", () => {
+      UI_ELEMENTS.processButton.disabled =
+        UI_ELEMENTS.input.files.length === 0;
+    });
 
-  UI_ELEMENTS.processButton.addEventListener("click", () => {
-    controller.process(Array.from(UI_ELEMENTS.input.files));
+    UI_ELEMENTS.processButton.addEventListener("click", () => {
+      controller.process(Array.from(UI_ELEMENTS.input.files));
+    });
   });
 });
