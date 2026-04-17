@@ -1,15 +1,15 @@
 // Wait for PDF.js to be ready before initializing the app
-function waitForPdfJs(callback, maxAttempts = 50) {
-  if (typeof window !== "undefined" && window.pdfjsLib) {
+function waitForPdfJs(callback, maxAttempts = 100) {
+  if (typeof pdfjsLib !== "undefined" && pdfjsLib.getDocument) {
     callback();
   } else if (maxAttempts > 0) {
     setTimeout(() => waitForPdfJs(callback, maxAttempts - 1), 100);
   } else {
     console.error(
-      "PDF.js failed to load. Please check your internet connection and try again."
+      "PDF.js failed to load after 10 seconds. Check your internet connection."
     );
     alert(
-      "Erro ao carregar PDF.js. Verifique sua conexão com a internet e recarregue a página."
+      "Erro ao carregar PDF.js. Verifique sua conexão com a internet, limpe o cache do navegador e recarregue a página."
     );
   }
 }
@@ -311,7 +311,7 @@ window.addEventListener("DOMContentLoaded", () => {
   waitForPdfJs(() => {
     if (window.pdfjsLib?.GlobalWorkerOptions) {
       window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.123/pdf.worker.min.js";
+        "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
     }
 
     const uiRenderer = new UIRenderer(UI_ELEMENTS);
