@@ -88,7 +88,29 @@
     </section>
   </main>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.123/pdf.js"></script>
+  <!-- PDF.js Library with Subresource Integrity -->
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.123/pdf.min.js"
+    integrity="sha512-vMrJS6zll/d89t9uyMxJ53/rB+zccUUcmoVq559N4M4OfJmbAySDEKe5gaxrHnwolo+TNjb+v5UjzceomVtWvg=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  ></script>
+
+  <!-- PDF.js Worker Initialization -->
+  <script>
+    (function initPdfWorker() {
+      if (typeof window !== "undefined" && window.pdfjsLib) {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.123/pdf.worker.min.js";
+        window.PDF_JS_READY = true;
+        window.dispatchEvent(new Event("pdfjs-ready"));
+      } else {
+        setTimeout(initPdfWorker, 100);
+      }
+    })();
+  </script>
+
+  <!-- Application -->
   <script src="app.js"></script>
 </body>
 </html>
