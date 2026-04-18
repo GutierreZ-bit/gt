@@ -326,6 +326,19 @@ class UIRenderer {
 
     return link;
   }
+
+  renderDownloadAllButton(onClick) {
+    const container = document.createElement("div");
+    container.className = "download-all-container";
+
+    const button = document.createElement("button");
+    button.className = "download-all-button";
+    button.textContent = "📦 Baixar Todos em ZIP";
+    button.onclick = onClick;
+
+    container.appendChild(button);
+    this.ui.output.insertBefore(container, this.ui.output.firstChild);
+  }
 }
 
 class PdfProcessorController {
@@ -334,9 +347,11 @@ class PdfProcessorController {
     this.textExtractor = textExtractor;
     this.dataExtractor = dataExtractor;
     this.filenameGenerator = filenameGenerator;
+    this.processedFiles = [];
   }
 
   async process(files) {
+    this.processedFiles = [];
     this.ui.reset();
     this.ui.setLoading(true);
     this.ui.showProgress(files.length);
@@ -346,8 +361,27 @@ class PdfProcessorController {
       this.ui.updateProgress(i + 1, files.length);
     }
 
+    if (this.processedFiles.length > 0) {
+      this.ui.renderDownloadAllButton(() => this.downloadAllAsZip());
+    }
+
     this.ui.hideProgress();
     this.ui.setLoading(false);
+  }
+
+  async downloadAllAsZip() {
+    const zip = new JSZip();
+
+    for (const { file, generatedName } of this.processedFiles) {
+      const buffer = await file.arrayBuffer();
+      zip.file(generatedName, buffer);
+    }
+
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(zipBlob);
+    link.download = `guias_${new Date().getTime()}.zip`;
+    link.click();
   }
 
   async processFile(file) {
@@ -376,6 +410,8 @@ class PdfProcessorController {
         file,
         generatedName
       );
+
+      this.processedFiles.push({ file, generatedName });
     } catch (error) {
       this.ui.renderError(
         file.name,
