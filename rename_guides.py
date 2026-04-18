@@ -15,12 +15,15 @@ PATIENT_PATTERNS = [
     r"Nome do paciente\s*[:\-]?\s*(.+?)\s*(?:\r?\n|$)",
     r"Paciente\s*[:\-]?\s*(.+?)\s*(?:\r?\n|$)",
     r"Beneficiário\s*[:\-]?\s*(.+?)\s*(?:\r?\n|$)",
+    r"10 - Nome\s*(.+?)\s*11 -",  # Novo padrão para guias TISS - para antes do 11
 ]
 GUIDE_PATTERNS = [
     r"Guia\s*(?:N(?:º|o|º?)|\#)?\s*[:\-]?\s*(\d+)",
     r"N[oº] da guia\s*[:\-]?\s*(\d+)",
     r"Número da guia\s*[:\-]?\s*(\d+)",
     r"Guia TISS\s*[:\-]?\s*(\d+)",
+    r"Númer o da Guia P rincipal\s*(\d+)",  # Novo padrão para guia principal
+    r"Númer o da Guia A tribuido pela Operadora\s*(\d+)",  # Novo padrão para guia atribuída
 ]
 
 INVALID_FILENAME_CHARS = r'[<>:"/\\|?*]'
@@ -62,7 +65,8 @@ def find_guide_numbers(text: str) -> list[str]:
     for pattern in GUIDE_PATTERNS:
         for match in re.finditer(pattern, text, flags=re.IGNORECASE):
             guide = match.group(1).strip()
-            if guide and guide not in results:
+            # Filtrar guias com pelo menos 6 dígitos (evitar números como "4" de seções)
+            if guide and len(guide) >= 6 and guide not in results:
                 results.append(guide)
     return results
 
