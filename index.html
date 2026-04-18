@@ -7,56 +7,130 @@
     name="description"
     content="Ferramenta para renomear guias PDF automaticamente com nome da paciente e número da guia."
   />
-  <title>Renomeador de Guias PDF</title>
+  <title>Renomeador de Guias PDF • H.Olhos</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <main>
-    <!-- HERO -->
-    <header class="hero">
-      <div class="hero-logo">
-        <div class="logo-mark" aria-hidden="true">
-          <div class="logo-eye"></div>
-          <span>H</span>
-        </div>
-
-        <div>
-          <h1>H.Olhos</h1>
-          <p class="hero-subtitle">
-            Renomeie guias de autorização e TISS diretamente no navegador.
-          </p>
+  <div class="app-container">
+    <!-- NAVBAR -->
+    <nav class="navbar">
+      <div class="navbar-content">
+        <div class="navbar-brand">
+          <div class="brand-icon">📋</div>
+          <div class="brand-text">
+            <h1>H.Olhos</h1>
+            <p class="navbar-subtitle">Renomeador de Guias</p>
+          </div>
         </div>
       </div>
+    </nav>
 
-      <p class="hero-description">
-        Uma ferramenta web simples para transformar PDFs em arquivos prontos
-        com o nome da paciente e número da guia.
-      </p>
-    </header>
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+      <div class="container">
+        <!-- HERO SECTION -->
+        <section class="hero-section">
+          <div class="hero-content">
+            <div class="hero-badge">✨ Processamento Inteligente</div>
+            <h1 class="hero-title">Renomeie Guias Médicas em um Clique</h1>
+            <p class="hero-subtitle">Extraia automaticamente nomes de pacientes e números de guias de seus PDFs. Com suporte a OCR para documentos escaneados.</p>
+          </div>
+        </section>
 
-    <!-- UPLOAD -->
-    <section class="upload-section" aria-labelledby="upload-title">
-      <h2 id="upload-title" class="sr-only">Envio de arquivos PDF</h2>
+        <!-- UPLOAD CARD -->
+        <div class="grid-layout">
+          <section class="card">
+            <div class="card-header">
+              <div class="card-header-icon">📄</div>
+              <div class="card-header-text">
+                <h2 class="card-title">Selecione seus PDFs</h2>
+                <p class="card-subtitle">Upload de um ou múltiplos arquivos</p>
+              </div>
+            </div>
 
-      <label for="pdf-input" class="upload-label">
-        Selecione um ou mais arquivos PDF ou imagens
-        <input
-          id="pdf-input"
-          type="file"
-          accept="application/pdf,image/*"
-          multiple
-          aria-describedby="upload-help"
-        />
-      </label>
+            <div class="card-body">
+              <label for="pdf-input" class="upload-zone">
+                <div class="upload-icon">📑</div>
+                <h3>Arraste seus PDFs aqui</h3>
+                <p>ou clique para selecionar arquivos</p>
+                <span class="upload-hint">PDFs ou imagens • Máximo 50MB cada</span>
+                <input
+                  id="pdf-input"
+                  type="file"
+                  accept="application/pdf,image/*"
+                  multiple
+                  aria-describedby="upload-help"
+                />
+              </label>
+              <p id="upload-help" class="sr-only">
+                Apenas arquivos PDF ou imagens são aceitos.
+              </p>
 
-      <p id="upload-help" class="sr-only">
-        Apenas arquivos PDF ou imagens são aceitos.
-      </p>
+              <div id="file-list" class="file-list hidden">
+                <div class="file-list-header">
+                  <span class="file-count" id="file-count">0 arquivo(s)</span>
+                  <button type="button" id="clear-files-btn" class="btn-text">Limpar</button>
+                </div>
+                <div id="file-items" class="file-items"></div>
+              </div>
+            </div>
+          </section>
+        </div>
 
-      <button id="process-button" type="button" disabled>
-        Processar PDFs
-      </button>
-    </section>
+        <!-- ACTION CARD -->
+        <section class="card card-action">
+          <button id="process-button" type="button" class="btn btn-primary btn-large" disabled>
+            <span class="btn-icon">⚡</span>
+            <span class="btn-text">Processar PDFs</span>
+          </button>
+          <p class="action-message">Carregue arquivos para começar</p>
+        </section>
+
+        <!-- PROGRESS CARD -->
+        <section id="progress-section" class="card card-progress hidden">
+          <div class="progress-content">
+            <div class="progress-header">
+              <h3 class="progress-title">
+                <span class="progress-spinner">⚙️</span>
+                Processando seus arquivos...
+              </h3>
+              <span class="progress-count" id="progress-text">0 / 0</span>
+            </div>
+
+            <div class="progress-bar-wrapper">
+              <div id="progress-bar" class="progress-bar"></div>
+              <span class="progress-percent" id="progress-percent">0%</span>
+            </div>
+
+            <div class="progress-details">
+              <span id="progress-detail" class="progress-info">Inicializando...</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- RESULTS SECTION -->
+        <section id="output" class="output" aria-live="polite" aria-labelledby="output-title">
+          <h2 id="output-title" class="sr-only">Resultados do processamento</h2>
+        </section>
+
+        <!-- DOWNLOAD ALL SECTION -->
+        <section id="download-all-container" class="download-all-container hidden">
+          <button id="download-all-button" class="btn btn-success btn-large">
+            <span class="btn-icon">⬇️</span>
+            <span class="btn-text">Baixar Todos em ZIP</span>
+          </button>
+        </section>
+      </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <div class="footer-content">
+        <p>&copy; 2026 H.Olhos • Sistema Profissional de Renomagem de Guias Médicas</p>
+      </div>
+    </footer>
+  </div>
+
 
     <!-- PROGRESS -->
     <section

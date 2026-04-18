@@ -18,9 +18,18 @@ const UI_ELEMENTS = {
   input: document.getElementById("pdf-input"),
   processButton: document.getElementById("process-button"),
   output: document.getElementById("output"),
-  progressContainer: document.getElementById("progress-container"),
+  progressSection: document.getElementById("progress-section"),
   progressBar: document.getElementById("progress-bar"),
   progressText: document.getElementById("progress-text"),
+  progressDetail: document.getElementById("progress-detail"),
+  progressPercent: document.getElementById("progress-percent"),
+  downloadAllContainer: document.getElementById("download-all-container"),
+  downloadAllButton: document.getElementById("download-all-button"),
+  fileList: document.getElementById("file-list"),
+  fileCount: document.getElementById("file-count"),
+  fileItems: document.getElementById("file-items"),
+  clearFilesBtn: document.getElementById("clear-files-btn"),
+  actionMessage: document.querySelector(".action-message"),
 };
 
 const PATTERNS = {
@@ -250,6 +259,7 @@ class UIRenderer {
 
   reset() {
     this.ui.output.innerHTML = "";
+    this.ui.downloadAllContainer.classList.add("hidden");
   }
 
   setLoading(isLoading) {
@@ -260,7 +270,7 @@ class UIRenderer {
   }
 
   showProgress(total) {
-    this.ui.progressContainer.classList.remove("hidden");
+    this.ui.progressSection.classList.remove("hidden");
     this.updateProgress(0, total);
   }
 
@@ -268,41 +278,137 @@ class UIRenderer {
     const percentage = Math.round((current / total) * 100);
     this.ui.progressBar.style.width = `${percentage}%`;
     this.ui.progressText.textContent = `${current} / ${total}`;
+    this.ui.progressPercent.textContent = `${percentage}%`;
   }
 
   hideProgress() {
     setTimeout(() => {
-      this.ui.progressContainer.classList.add("hidden");
+      this.ui.progressSection.classList.add("hidden");
     }, 600);
   }
 
   renderResult(fileName, patient, guide, file, generatedName) {
-    const card = this.createCard(fileName);
+    const card = this.createCard();
 
-    card.appendChild(this.createText(
-      `Nome: ${patient || "(não encontrado)"} | Guia: ${guide || "(não encontrado)"}`
-    ));
+    // Card header with file name
+    const header = document.createElement("div");
+    header.className = "card-header";
+    const icon = document.createElement("div");
+    icon.className = "card-header-icon";
+    icon.textContent = "✓";
+    icon.style.color = "#10b981";
+    header.appendChild(icon);
 
-    card.appendChild(this.createDownloadLink(file, generatedName));
+    const headerText = document.createElement("div");
+    headerText.className = "card-header-text";
+    const title = document.createElement("h3");
+    title.className = "card-title";
+    title.style.fontSize = "1rem";
+    title.textContent = fileName;
+    const subtitle = document.createElement("p");
+    subtitle.className = "card-subtitle";
+    subtitle.textContent = "Arquivo processado com sucesso";
+    headerText.appendChild(title);
+    headerText.appendChild(subtitle);
+    header.appendChild(headerText);
+    card.appendChild(header);
+
+    // Card body with details
+    const body = document.createElement("div");
+    body.className = "card-body";
+    
+    const details = document.createElement("div");
+    details.style.display = "grid";
+    details.style.gap = "0.75rem";
+    details.style.marginBottom = "1rem";
+
+    const patientDiv = document.createElement("div");
+    patientDiv.style.padding = "0.75rem";
+    patientDiv.style.background = "rgba(37, 99, 235, 0.05)";
+    patientDiv.style.borderRadius = "0.5rem";
+    const patientLabel = document.createElement("span");
+    patientLabel.style.display = "block";
+    patientLabel.style.fontSize = "0.75rem";
+    patientLabel.style.color = "#64748b";
+    patientLabel.style.fontWeight = "600";
+    patientLabel.textContent = "Nome do Paciente";
+    const patientValue = document.createElement("span");
+    patientValue.style.display = "block";
+    patientValue.style.fontSize = "1rem";
+    patientValue.style.fontWeight = "600";
+    patientValue.style.color = "#0f172a";
+    patientValue.textContent = patient || "(não encontrado)";
+    patientDiv.appendChild(patientLabel);
+    patientDiv.appendChild(patientValue);
+    details.appendChild(patientDiv);
+
+    const guideDiv = document.createElement("div");
+    guideDiv.style.padding = "0.75rem";
+    guideDiv.style.background = "rgba(16, 185, 129, 0.05)";
+    guideDiv.style.borderRadius = "0.5rem";
+    const guideLabel = document.createElement("span");
+    guideLabel.style.display = "block";
+    guideLabel.style.fontSize = "0.75rem";
+    guideLabel.style.color = "#64748b";
+    guideLabel.style.fontWeight = "600";
+    guideLabel.textContent = "Número da Guia";
+    const guideValue = document.createElement("span");
+    guideValue.style.display = "block";
+    guideValue.style.fontSize = "1rem";
+    guideValue.style.fontWeight = "600";
+    guideValue.style.color = "#0f172a";
+    guideValue.textContent = guide || "(não encontrado)";
+    guideDiv.appendChild(guideLabel);
+    guideDiv.appendChild(guideValue);
+    details.appendChild(guideDiv);
+
+    body.appendChild(details);
+    body.appendChild(this.createDownloadLink(file, generatedName));
+    card.appendChild(body);
 
     this.ui.output.appendChild(card);
   }
 
   renderError(fileName, message) {
-    const card = this.createCard(fileName);
-    card.appendChild(this.createText(message, "error"));
+    const card = this.createCard();
+    
+    const header = document.createElement("div");
+    header.className = "card-header";
+    const icon = document.createElement("div");
+    icon.className = "card-header-icon";
+    icon.textContent = "⚠";
+    icon.style.color = "#ef4444";
+    header.appendChild(icon);
+
+    const headerText = document.createElement("div");
+    headerText.className = "card-header-text";
+    const title = document.createElement("h3");
+    title.className = "card-title";
+    title.style.fontSize = "1rem";
+    title.textContent = fileName;
+    const subtitle = document.createElement("p");
+    subtitle.className = "card-subtitle";
+    subtitle.textContent = "Erro ao processar arquivo";
+    headerText.appendChild(title);
+    headerText.appendChild(subtitle);
+    header.appendChild(headerText);
+    card.appendChild(header);
+
+    const body = document.createElement("div");
+    body.className = "card-body";
+    const errorMsg = document.createElement("p");
+    errorMsg.className = "error-text";
+    errorMsg.textContent = message;
+    body.appendChild(errorMsg);
+    card.appendChild(body);
+
     this.ui.output.appendChild(card);
   }
 
-  createCard(title) {
+  createCard() {
     const card = document.createElement("div");
     card.className = "card";
-
-    const heading = document.createElement("h2");
-    heading.textContent = title;
-
-    card.appendChild(heading);
-
+    card.style.animation = "slideInUp 600ms cubic-bezier(0.4, 0, 0.2, 1)";
     return card;
   }
 
@@ -328,16 +434,8 @@ class UIRenderer {
   }
 
   renderDownloadAllButton(onClick) {
-    const container = document.createElement("div");
-    container.className = "download-all-container";
-
-    const button = document.createElement("button");
-    button.className = "download-all-button";
-    button.textContent = "📦 Baixar Todos em ZIP";
-    button.onclick = onClick;
-
-    container.appendChild(button);
-    this.ui.output.insertBefore(container, this.ui.output.firstChild);
+    this.ui.downloadAllContainer.classList.remove("hidden");
+    this.ui.downloadAllButton.onclick = onClick;
   }
 }
 
