@@ -52,10 +52,15 @@ const PATTERNS = {
 class PdfTextExtractor {
   async extract(file) {
     const buffer = await file.arrayBuffer();
+    const mimeType = file.type || "application/pdf";
 
-    if (file.type.startsWith("image/")) {
+    if (mimeType.startsWith("image/")) {
       const text = await this.ocrImage(file);
-      return { text: this.normalize(text), buffer };
+      return {
+        text: this.normalize(text),
+        buffer,
+        mimeType,
+      };
     }
 
     const pdf = await pdfjsLib.getDocument({
@@ -81,12 +86,17 @@ class PdfTextExtractor {
 
     if (!this.isValidText(normalized)) {
       const ocrText = await this.ocrPdf(pdf);
-      return { text: this.normalize(ocrText), buffer };
+      return {
+        text: this.normalize(ocrText),
+        buffer,
+        mimeType,
+      };
     }
 
     return {
       text: normalized,
       buffer,
+      mimeType,
     };
   }
 
@@ -102,53 +112,45 @@ class PdfTextExtractor {
   }
 
   async ocrPdf(pdf) {
-    const worker = Tesseract.createWorker({
-      logger: () => {},
-    });
-
-    await worker.load();
-    await worker.loadLanguage("por");
-    await worker.initialize("por");
-
+    const worker = await Tesseract.createWorker("por");
     const pagesText = [];
 
-    for (let pageIndex = 1; pageIndex <= pdf.numPages; pageIndex++) {
-      const page = await pdf.getPage(pageIndex);
-      const viewport = page.getViewport({ scale: 2 });
-      const canvas = document.createElement("canvas");
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      const context = canvas.getContext("2d");
+    try {
+      for (let pageIndex = 1; pageIndex <= Math.min(pdf.numPages, 2); pageIndex++) {
+        const page = await pdf.getPage(pageIndex);
+        const viewport = page.getViewport({ scale: 1.5 });
+        const canvas = document.createElement("canvas");
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const context = canvas.getContext("2d");
 
-      await page.render({ canvasContext: context, viewport }).promise;
-      const { data } = await worker.recognize(canvas, "por");
-      pagesText.push(data.text || "");
+        await page.render({ canvasContext: context, viewport }).promise;
+        const result = await worker.recognize(canvas);
+        pagesText.push(result.data.text || "");
+      }
+    } finally {
+      await worker.terminate();
     }
 
-    await worker.terminate();
     return pagesText.join("\n");
   }
 
   async ocrImage(file) {
-    const worker = Tesseract.createWorker({
-      logger: () => {},
-    });
+    const worker = await Tesseract.createWorker("por");
 
-    await worker.load();
-    await worker.loadLanguage("por");
-    await worker.initialize("por");
+    try {
+      const bitmap = await createImageBitmap(file);
+      const canvas = document.createElement("canvas");
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      const context = canvas.getContext("2d");
+      context.drawImage(bitmap, 0, 0);
 
-    const bitmap = await createImageBitmap(file);
-    const canvas = document.createElement("canvas");
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
-    const context = canvas.getContext("2d");
-    context.drawImage(bitmap, 0, 0);
-
-    const { data } = await worker.recognize(canvas, "por");
-    await worker.terminate();
-
-    return data.text || "";
+      const result = await worker.recognize(canvas);
+      return result.data.text || "";
+    } finally {
+      await worker.terminate();
+    }
   }
 }
 
@@ -274,14 +276,14 @@ class UIRenderer {
     }, 600);
   }
 
-  renderResult(fileName, patient, guide, buffer, generatedName) {
+  renderResult(fileName, patient, guide, file, generatedName) {
     const card = this.createCard(fileName);
 
     card.appendChild(this.createText(
       `Nome: ${patient || "(não encontrado)"} | Guia: ${guide || "(não encontrado)"}`
     ));
 
-    card.appendChild(this.createDownloadLink(buffer, generatedName));
+    card.appendChild(this.createDownloadLink(file, generatedName));
 
     this.ui.output.appendChild(card);
   }
@@ -315,11 +317,9 @@ class UIRenderer {
     return paragraph;
   }
 
-  createDownloadLink(buffer, fileName) {
-    const blob = new Blob([buffer], { type: "application/pdf" });
-
+  createDownloadLink(file, fileName) {
     const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
+    link.href = URL.createObjectURL(file);
     link.download = fileName;
     link.className = "download-link";
     link.textContent = `Baixar ${fileName}`;
@@ -352,7 +352,7 @@ class PdfProcessorController {
 
   async processFile(file) {
     try {
-      const { text, buffer } = await this.textExtractor.extract(file);
+      const { text } = await this.textExtractor.extract(file);
       const { patient, guide } = this.dataExtractor.extract(text);
 
       if (!patient && !guide) {
@@ -373,7 +373,7 @@ class PdfProcessorController {
         file.name,
         patient,
         guide,
-        buffer,
+        file,
         generatedName
       );
     } catch (error) {
