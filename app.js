@@ -53,6 +53,11 @@ class PdfTextExtractor {
   async extract(file) {
     const buffer = await file.arrayBuffer();
 
+    if (file.type.startsWith("image/")) {
+      const text = await this.ocrImage(file);
+      return { text: this.normalize(text), buffer };
+    }
+
     const pdf = await pdfjsLib.getDocument({
       data: new Uint8Array(buffer),
     }).promise;
@@ -72,8 +77,15 @@ class PdfTextExtractor {
       )
       .join("\n");
 
+    const normalized = this.normalize(text);
+
+    if (!this.isValidText(normalized)) {
+      const ocrText = await this.ocrPdf(pdf);
+      return { text: this.normalize(ocrText), buffer };
+    }
+
     return {
-      text: this.normalize(text),
+      text: normalized,
       buffer,
     };
   }
@@ -83,6 +95,60 @@ class PdfTextExtractor {
       .replace(/\s{2,}/g, " ")
       .replace(/\n\s+/g, "\n")
       .trim();
+  }
+
+  isValidText(text) {
+    return text && text.trim().length >= 40;
+  }
+
+  async ocrPdf(pdf) {
+    const worker = Tesseract.createWorker({
+      logger: () => {},
+    });
+
+    await worker.load();
+    await worker.loadLanguage("por");
+    await worker.initialize("por");
+
+    const pagesText = [];
+
+    for (let pageIndex = 1; pageIndex <= pdf.numPages; pageIndex++) {
+      const page = await pdf.getPage(pageIndex);
+      const viewport = page.getViewport({ scale: 2 });
+      const canvas = document.createElement("canvas");
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const context = canvas.getContext("2d");
+
+      await page.render({ canvasContext: context, viewport }).promise;
+      const { data } = await worker.recognize(canvas, "por");
+      pagesText.push(data.text || "");
+    }
+
+    await worker.terminate();
+    return pagesText.join("\n");
+  }
+
+  async ocrImage(file) {
+    const worker = Tesseract.createWorker({
+      logger: () => {},
+    });
+
+    await worker.load();
+    await worker.loadLanguage("por");
+    await worker.initialize("por");
+
+    const bitmap = await createImageBitmap(file);
+    const canvas = document.createElement("canvas");
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const context = canvas.getContext("2d");
+    context.drawImage(bitmap, 0, 0);
+
+    const { data } = await worker.recognize(canvas, "por");
+    await worker.terminate();
+
+    return data.text || "";
   }
 }
 
