@@ -290,6 +290,14 @@ body {
   padding: var(--space-2xl) var(--space-xl);
 }
 
+.action-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-lg);
+}
+
 .action-message {
   margin-top: var(--space-md);
   font-size: 0.9375rem;
@@ -711,6 +719,11 @@ body {
 
   .card-header-icon {
     font-size: 1.75rem;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    width: 100%;
   }
 
   .btn-large {

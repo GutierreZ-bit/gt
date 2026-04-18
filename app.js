@@ -17,14 +17,13 @@ function waitForPdfJs(callback, maxAttempts = 100) {
 const UI_ELEMENTS = {
   input: document.getElementById("pdf-input"),
   processButton: document.getElementById("process-button"),
+  downloadAllButton: document.getElementById("download-all-button"),
   output: document.getElementById("output"),
   progressSection: document.getElementById("progress-section"),
   progressBar: document.getElementById("progress-bar"),
   progressText: document.getElementById("progress-text"),
   progressDetail: document.getElementById("progress-detail"),
   progressPercent: document.getElementById("progress-percent"),
-  downloadAllContainer: document.getElementById("download-all-container"),
-  downloadAllButton: document.getElementById("download-all-button"),
   fileList: document.getElementById("file-list"),
   fileCount: document.getElementById("file-count"),
   fileItems: document.getElementById("file-items"),
@@ -259,7 +258,7 @@ class UIRenderer {
 
   reset() {
     this.ui.output.innerHTML = "";
-    this.ui.downloadAllContainer.classList.add("hidden");
+    this.ui.downloadAllButton.classList.add("hidden");
   }
 
   setLoading(isLoading) {
@@ -434,7 +433,7 @@ class UIRenderer {
   }
 
   renderDownloadAllButton(onClick) {
-    this.ui.downloadAllContainer.classList.remove("hidden");
+    this.ui.downloadAllButton.classList.remove("hidden");
     this.ui.downloadAllButton.onclick = onClick;
   }
 }
