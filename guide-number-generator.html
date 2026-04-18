@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+    name="description"
+    content="Gerador de números sequenciais de guias médicas - Crie séries de números para sua organização."
+  />
+  <title>Gerador de Números de Guia • H.Olhos</title>
+  <link rel="stylesheet" href="guide-number-styles.css" />
+</head>
+<body>
+  <main>
+    <!-- HERO -->
+    <header class="hero">
+      <div class="hero-logo">
+        <div class="logo-mark" aria-hidden="true">
+          <div class="logo-eye"></div>
+          <span>H</span>
+        </div>
+
+        <div>
+          <h1>H.Olhos</h1>
+          <p class="hero-subtitle">
+            Gerador de Números de Guias Médicas
+          </p>
+        </div>
+      </div>
+
+      <p class="hero-description">
+        Ferramenta para gerar séries sequenciais de números de guia com formato personalizado.
+        Exportar para CSV, TXT ou imprimir.
+      </p>
+
+      <div class="hero-nav">
+        <a href="index.html" class="nav-link">📄 Renomeador</a>
+        <a href="generator.html" class="nav-link">📋 Gerador em Lote</a>
+        <span class="nav-link-active">🔢 Números de Guia</span>
+      </div>
+    </header>
+
+    <!-- CONFIGURATION SECTION -->
+    <section class="config-section">
+      <div class="config-card">
+        <h2>Gerador de Números de Guia</h2>
+
+        <div class="form-group">
+          <label for="start-number">Número Inicial</label>
+          <div class="input-wrapper">
+            <span class="input-icon">🔢</span>
+            <input
+              type="number"
+              id="start-number"
+              min="1"
+              value="100001"
+              class="form-input"
+            />
+          </div>
+          <small class="help-text">Primeiro número da sequência</small>
+        </div>
+
+        <div class="form-group">
+          <label for="end-number">Número Final</label>
+          <div class="input-wrapper">
+            <span class="input-icon">🔢</span>
+            <input
+              type="number"
+              id="end-number"
+              min="1"
+              value="100100"
+              class="form-input"
+            />
+          </div>
+          <small class="help-text">Último número da sequência (máximo 1000 números)</small>
+        </div>
+
+        <div class="form-group">
+          <label for="prefix-input">Prefixo (opcional)</label>
+          <div class="input-wrapper">
+            <span class="input-icon">🏷️</span>
+            <input
+              type="text"
+              id="prefix-input"
+              placeholder="Ex: GUIA-"
+              class="form-input"
+            />
+          </div>
+          <small class="help-text">Texto que aparecerá antes do número</small>
+        </div>
+
+        <div class="form-group">
+          <label for="suffix-input">Sufixo (opcional)</label>
+          <div class="input-wrapper">
+            <span class="input-icon">🏷️</span>
+            <input
+              type="text"
+              id="suffix-input"
+              placeholder="Ex: /2026"
+              class="form-input"
+            />
+          </div>
+          <small class="help-text">Texto que aparecerá após o número</small>
+        </div>
+
+        <div class="form-group">
+          <label for="padding-input">Preenchimento de Zeros</label>
+          <div class="input-wrapper">
+            <span class="input-icon">0️⃣</span>
+            <input
+              type="number"
+              id="padding-input"
+              min="0"
+              max="10"
+              value="0"
+              class="form-input"
+            />
+          </div>
+          <small class="help-text">Ex: padding=6 para 000001, 000002...</small>
+        </div>
+
+        <div id="preview-section" class="preview-section">
+          <h3>Pré-visualização</h3>
+          <div id="preview-list" class="preview-list"></div>
+        </div>
+
+        <div class="button-group">
+          <button id="preview-btn" class="btn btn-primary">
+            👁️ Mostrar Pré-visualização
+          </button>
+          <button id="download-csv-btn" class="btn btn-success" disabled>
+            📥 Baixar CSV
+          </button>
+          <button id="download-txt-btn" class="btn btn-success" disabled>
+            📄 Baixar TXT
+          </button>
+          <button id="copy-btn" class="btn btn-info" disabled>
+            📋 Copiar para Área de Transferência
+          </button>
+        </div>
+
+        <div id="info-message" class="info-message"></div>
+      </div>
+    </section>
+
+    <!-- STATS SECTION -->
+    <section id="stats-section" class="stats-section hidden">
+      <div class="stats-card">
+        <div class="stat">
+          <span class="stat-number" id="stat-count">0</span>
+          <span class="stat-label">Números Gerados</span>
+        </div>
+        <div class="stat">
+          <span class="stat-number" id="stat-format">0</span>
+          <span class="stat-label">Caracteres cada</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Application -->
+  <script src="guide-number-app.js"></script>
+</body>
+</html>
