@@ -31,6 +31,8 @@ const PATTERNS = {
     /Paciente\s*[:\-]?\s*\n?\s*(.+?)\s*(?:\r?\n|$)/gi,
     /Beneficiário\s*[:\-]?\s*\n?\s*(.+?)\s*(?:\r?\n|$)/gi,
     /Nome\s+do\s+Beneficiário\s*\n?\s*(.+?)\s*(?:\r?\n|$)/gi,
+    /10 - Nome\s*(.+?)\s*11 -/gi,  // Novo padrão para guias TISS
+    /código 10 - Nome\s*(.+?)\s*(?:\r?\n|$)/gi,  // Padrão específico com "código"
   ],
 
   guide: [
@@ -41,6 +43,9 @@ const PATTERNS = {
     /Guia TISS\s*[:\-]?\s*\n?\s*(\d+)/gi,
     /Guia\s*(?:N(?:º|o|º?)|#)?\s*[:\-]?\s*\n?\s*(\d+)/gi,
     /Número da guia\s*[:\-]?\s*\n?\s*(\d+)/gi,
+    /Número da Guia Principal\s*(\d+)/gi,  // Corrigido: guia principal
+    /Número da Guia Atribuido pela Operadora\s*(\d+)/gi,  // Corrigido: guia atribuída
+    /código 7 - Número da Guia Atribuido pela Operadora\s*(\d+)/gi,  // Padrão específico com "código"
   ],
 };
 
@@ -105,7 +110,14 @@ class PatientDataExtractor {
       const match = regex.exec(text);
       regex.lastIndex = 0;
 
-      if (match?.[1]) return match[1].trim();
+      if (match?.[1]) {
+        const result = match[1].trim();
+        // Para guias, filtrar apenas números com pelo menos 6 dígitos
+        if (patterns === this.patterns.guide && result.length < 6) {
+          continue;
+        }
+        return result;
+      }
     }
 
     return "";
