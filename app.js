@@ -411,23 +411,19 @@ class UIRenderer {
     return card;
   }
 
-  createText(text, className = "") {
-    const paragraph = document.createElement("p");
-    paragraph.textContent = text;
-
-    if (className) {
-      paragraph.className = className;
-    }
-
-    return paragraph;
-  }
-
   createDownloadLink(file, fileName) {
     const link = document.createElement("a");
-    link.href = URL.createObjectURL(file);
+    const url = URL.createObjectURL(file);
+    
+    link.href = url;
     link.download = fileName;
     link.className = "download-link";
     link.textContent = `Baixar ${fileName}`;
+
+    // Revoguear URL após download para evitar memory leak
+    link.addEventListener('click', () => {
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+    }, { once: true });
 
     return link;
   }
@@ -445,9 +441,18 @@ class PdfProcessorController {
     this.dataExtractor = dataExtractor;
     this.filenameGenerator = filenameGenerator;
     this.processedFiles = [];
+    this.MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
   }
 
   async process(files) {
+    // Validar arquivos ANTES de iniciar processamento
+    const validation = this.validateFiles(files);
+    if (!validation.valid) {
+      this.ui.renderError("Validação", validation.error);
+      this.ui.setLoading(false);
+      return;
+    }
+
     this.processedFiles = [];
     this.ui.reset();
     this.ui.setLoading(true);
@@ -466,6 +471,38 @@ class PdfProcessorController {
     this.ui.setLoading(false);
   }
 
+  validateFiles(files) {
+    if (!files || files.length === 0) {
+      return { valid: false, error: "Nenhum arquivo selecionado" };
+    }
+
+    for (const file of files) {
+      // Validar tipo
+      if (!this.isValidFileType(file)) {
+        return {
+          valid: false,
+          error: `Tipo inválido: ${file.type}. Aceitos: PDF, PNG, JPG`
+        };
+      }
+
+      // Validar tamanho
+      if (file.size > this.MAX_FILE_SIZE) {
+        const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+        return {
+          valid: false,
+          error: `Arquivo muito grande: ${sizeMB}MB. Máximo: 50MB`
+        };
+      }
+    }
+
+    return { valid: true };
+  }
+
+  isValidFileType(file) {
+    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+    return allowedTypes.includes(file.type);
+  }
+
   async downloadAllAsZip() {
     const zip = new JSZip();
 
@@ -475,10 +512,17 @@ class PdfProcessorController {
     }
 
     const zipBlob = await zip.generateAsync({ type: "blob" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(zipBlob);
-    link.download = `guias_${new Date().getTime()}.zip`;
-    link.click();
+    const url = URL.createObjectURL(zipBlob);
+    
+    try {
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `guias_${new Date().getTime()}.zip`;
+      link.click();
+    } finally {
+      // Revogar URL após download para evitar memory leak
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+    }
   }
 
   async processFile(file) {
