@@ -57,7 +57,15 @@ const PATTERNS = {
   ],
 };
 
+/**
+ * Extrai texto de arquivos PDF ou imagens usando PDF.js e OCR quando necessário
+ */
 class PdfTextExtractor {
+  /**
+   * Extrai texto de um arquivo (PDF ou imagem)
+   * @param {File} file - Arquivo para extrair texto
+   * @returns {Promise<{text: string, buffer: ArrayBuffer, mimeType: string}>}
+   */
   async extract(file) {
     const buffer = await file.arrayBuffer();
     const mimeType = file.type || "application/pdf";
@@ -162,11 +170,24 @@ class PdfTextExtractor {
   }
 }
 
+/**
+ * Extrai dados do paciente (nome e número de guia) de texto
+ */
 class PatientDataExtractor {
+  /**
+   * @param {Object} patterns - Objeto com arrays de padrões regex
+   * @param {RegExp[]} patterns.patient - Padrões para extrair nome
+   * @param {RegExp[]} patterns.guide - Padrões para extrair guia
+   */
   constructor(patterns) {
     this.patterns = patterns;
   }
 
+  /**
+   * Extrai nome do paciente e número de guia do texto
+   * @param {string} text - Texto extraído do PDF/imagem
+   * @returns {Object} {patient: string, guide: string}
+   */
   extract(text) {
     return {
       patient:
@@ -181,6 +202,12 @@ class PatientDataExtractor {
     };
   }
 
+  /**
+   * Encontra primeiro match em array de padrões regex
+   * @param {string} text - Texto para buscar
+   * @param {RegExp[]} patterns - Array de padrões regex
+   * @returns {string} Primeiro match encontrado ou string vazia
+   */
   find(text, patterns) {
     for (const regex of patterns) {
       const match = regex.exec(text);
@@ -199,6 +226,12 @@ class PatientDataExtractor {
     return "";
   }
 
+  /**
+   * Busca por padrão formato 'Label: valor'
+   * @param {string} text - Texto para buscar
+   * @param {string} label - Label para procurar
+   * @returns {string} Valor encontrado ou string vazia
+   */
   findByLabel(text, label) {
     const lines = text
       .split("\n")
@@ -217,9 +250,19 @@ class PatientDataExtractor {
   }
 }
 
+/**
+ * Gera nomes de arquivo renomeados com base em dados do paciente
+ */
 class FilenameGenerator {
   static INVALID_CHARS = /[<>:"/\\|?*]/g;
 
+  /**
+   * Gera nome de arquivo renomeado
+   * @param {string} originalName - Nome original do arquivo
+   * @param {string} patient - Nome do paciente
+   * @param {string} guide - Número da guia
+   * @returns {string} Nome do arquivo renomeado
+   */
   generate(originalName, patient, guide) {
     const safePatient = this.sanitize(
       patient || this.removeExtension(originalName)
@@ -232,6 +275,11 @@ class FilenameGenerator {
     return `${safePatient}_${safeGuide}${this.extension(originalName)}`;
   }
 
+  /**
+   * Remove caracteres inválidos para nomes de arquivo
+   * @param {string} value - Valor para sanitizar
+   * @returns {string} Valor sanitizado
+   */
   sanitize(value) {
     return value
       .trim()
@@ -240,18 +288,34 @@ class FilenameGenerator {
       .slice(0, 180);
   }
 
+  /**
+   * Extrai extensão do arquivo
+   * @param {string} filename - Nome do arquivo
+   * @returns {string} Extensão com ponto (ex: '.pdf')
+   */
   extension(filename) {
     const index = filename.lastIndexOf(".");
     return index >= 0 ? filename.slice(index) : ".pdf";
   }
 
+  /**
+   * Remove extensão do nome do arquivo
+   * @param {string} filename - Nome do arquivo
+   * @returns {string} Nome sem extensão
+   */
   removeExtension(filename) {
     const index = filename.lastIndexOf(".");
     return index >= 0 ? filename.slice(0, index) : filename;
   }
 }
 
+/**
+ * Renderiza elementos da interface do usuário e atualiza o DOM
+ */
 class UIRenderer {
+  /**
+   * @param {Object} elements - Referências aos elementos do DOM
+   */
   constructor(elements) {
     this.ui = elements;
   }
@@ -434,7 +498,17 @@ class UIRenderer {
   }
 }
 
+/**
+ * Controlador principal que orquestra todo o processo de extração e renomeação de PDFs
+ */
 class PdfProcessorController {
+  /**
+   * @param {Object} config - Configuração com instâncias dos serviços
+   * @param {UIRenderer} config.uiRenderer - Renderizador de UI
+   * @param {PdfTextExtractor} config.textExtractor - Extrator de texto
+   * @param {PatientDataExtractor} config.dataExtractor - Extrator de dados do paciente
+   * @param {FilenameGenerator} config.filenameGenerator - Gerador de nomes de arquivo
+   */
   constructor({ uiRenderer, textExtractor, dataExtractor, filenameGenerator }) {
     this.ui = uiRenderer;
     this.textExtractor = textExtractor;
