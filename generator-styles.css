@@ -166,7 +166,7 @@ body {
 ================================ */
 .main-content {
   flex: 1;
-  padding: var(--space-3xl) var(--space-xl);
+  padding: var(--space-xl) var(--space-lg);
 }
 
 .container {
@@ -179,7 +179,7 @@ body {
 ================================ */
 .hero-section {
   text-align: center;
-  margin-bottom: var(--space-3xl);
+  margin-bottom: var(--space-lg);
   animation: slideInDown 600ms var(--ease-smooth);
 }
 
