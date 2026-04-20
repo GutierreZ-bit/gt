@@ -1,42 +1,112 @@
-<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+<svg width="240" height="240" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#2563eb;stop-opacity:1" />
-      <stop offset="25%" style="stop-color:#1e40af;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#06b6d4;stop-opacity:1" />
-      <stop offset="75%" style="stop-color:#10b981;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#f97316;stop-opacity:1" />
+    <!-- Gradientes por setor -->
+    <linearGradient id="grad-blue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0052cc;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0088ff;stop-opacity:1" />
     </linearGradient>
-    <linearGradient id="grad2" x1="100%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#f97316;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#ec4899;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#2563eb;stop-opacity:1" />
+    
+    <linearGradient id="grad-cyan" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0088ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00ccaa;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="grad-green" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00ccaa;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#22dd88;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="grad-lime" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#22dd88;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#aadd22;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="grad-yellow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#aadd22;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ffdd00;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="grad-orange" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffdd00;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ff8800;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="grad-red" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff8800;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ff3333;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="grad-pink" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff3333;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ff1199;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="grad-magenta" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff1199;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#bb22ff;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="grad-purple" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#bb22ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0052cc;stop-opacity:1" />
     </linearGradient>
   </defs>
   
-  <!-- Círculo externo com gradiente -->
-  <circle cx="60" cy="60" r="55" fill="url(#grad1)" opacity="0.9"/>
+  <!-- Fundo branco subtil -->
+  <circle cx="120" cy="120" r="110" fill="white" opacity="0.05"/>
   
-  <!-- Estrela branca no centro -->
-  <g transform="translate(60, 60)">
+  <!-- Setores do gradiente circular -->
+  <!-- Setor 1 - Blue -->
+  <path d="M 120 120 L 120 10 A 110 110 0 0 1 197.6 36.4 Z" fill="url(#grad-blue)"/>
+  
+  <!-- Setor 2 - Cyan -->
+  <path d="M 120 120 L 197.6 36.4 A 110 110 0 0 1 230 120 Z" fill="url(#grad-cyan)"/>
+  
+  <!-- Setor 3 - Green -->
+  <path d="M 120 120 L 230 120 A 110 110 0 0 1 197.6 203.6 Z" fill="url(#grad-green)"/>
+  
+  <!-- Setor 4 - Lime -->
+  <path d="M 120 120 L 197.6 203.6 A 110 110 0 0 1 120 230 Z" fill="url(#grad-lime)"/>
+  
+  <!-- Setor 5 - Yellow -->
+  <path d="M 120 120 L 120 230 A 110 110 0 0 1 42.4 203.6 Z" fill="url(#grad-yellow)"/>
+  
+  <!-- Setor 6 - Orange -->
+  <path d="M 120 120 L 42.4 203.6 A 110 110 0 0 1 10 120 Z" fill="url(#grad-orange)"/>
+  
+  <!-- Setor 7 - Red -->
+  <path d="M 120 120 L 10 120 A 110 110 0 0 1 42.4 36.4 Z" fill="url(#grad-red)"/>
+  
+  <!-- Setor 8 - Pink/Magenta -->
+  <path d="M 120 120 L 42.4 36.4 A 110 110 0 0 1 120 10 Z" fill="url(#grad-pink)"/>
+  
+  <!-- Estrela branca no centro - 8 pontas -->
+  <g transform="translate(120, 120)">
     <!-- Ponta superior -->
-    <polygon points="0,-25 6,-8 25,-8" fill="white"/>
+    <polygon points="0,-45 8,-20 0,-15 -8,-20" fill="white"/>
+    
     <!-- Ponta superior direita -->
-    <polygon points="18,-18 13,-5 20,5" fill="white"/>
+    <polygon points="32,-32 18,-18 22,-8 32,-18" fill="white"/>
+    
     <!-- Ponta direita -->
-    <polygon points="25,0 8,6 8,25" fill="white"/>
+    <polygon points="45,0 20,8 15,0 20,-8" fill="white"/>
+    
     <!-- Ponta inferior direita -->
-    <polygon points="18,18 5,13 5,20" fill="white"/>
+    <polygon points="32,32 18,18 28,22 32,18" fill="white"/>
+    
     <!-- Ponta inferior -->
-    <polygon points="0,25 -6,8 -25,8" fill="white"/>
+    <polygon points="0,45 -8,20 0,15 8,20" fill="white"/>
+    
     <!-- Ponta inferior esquerda -->
-    <polygon points="-18,18 -13,5 -20,5" fill="white"/>
+    <polygon points="-32,32 -18,18 -22,22 -32,18" fill="white"/>
+    
     <!-- Ponta esquerda -->
-    <polygon points="-25,0 -8,6 -8,25" fill="white"/>
+    <polygon points="-45,0 -20,8 -15,0 -20,-8" fill="white"/>
+    
     <!-- Ponta superior esquerda -->
-    <polygon points="-18,-18 -5,-13 -5,-20" fill="white"/>
+    <polygon points="-32,-32 -18,-18 -22,-8 -32,-18" fill="white"/>
   </g>
   
-  <!-- Sombra -->
-  <ellipse cx="60" cy="115" rx="50" ry="8" fill="rgba(0,0,0,0.1)"/>
+  <!-- Leve sombra -->
+  <ellipse cx="120" cy="230" rx="90" ry="12" fill="rgba(0,0,0,0.08)"/>
 </svg>
