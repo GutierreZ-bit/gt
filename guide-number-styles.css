@@ -2,28 +2,28 @@
    DESIGN TOKENS
 ================================ */
 :root {
-  --color-primary: #2563eb;
-  --color-primary-light: #60a5fa;
-  --color-primary-soft: #dbeafe;
+  --color-primary: #0052cc;
+  --color-primary-light: #0080ff;
+  --color-primary-soft: #e8f0f7;
 
-  --color-success: #10b981;
-  --color-success-dark: #0f766e;
-  --color-info: #06b6d4;
+  --color-success: #00b4a6;
+  --color-success-dark: #008080;
+  --color-info: #00d4b8;
 
-  --color-bg: #f0f7ff;
+  --color-bg: #f5f8fb;
   --color-surface: #ffffff;
-  --color-border: #dbeafe;
+  --color-border: #d1dce6;
 
-  --color-text: #0f172a;
-  --color-text-muted: #475569;
-  --color-text-light: rgba(255, 255, 255, 0.92);
+  --color-text: #0f1117;
+  --color-text-muted: #424242;
+  --color-text-light: rgba(255, 255, 255, 0.95);
 
   --radius-sm: 10px;
   --radius-md: 16px;
   --radius-lg: 24px;
 
-  --shadow-sm: 0 4px 10px rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 10px 30px rgba(15, 23, 42, 0.08);
+  --shadow-sm: 0 4px 10px rgba(15, 17, 23, 0.06);
+  --shadow-md: 0 10px 30px rgba(15, 17, 23, 0.1);
 
   --transition-fast: 180ms ease;
   --transition-normal: 280ms ease;
