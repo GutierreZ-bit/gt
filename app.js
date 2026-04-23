@@ -70,7 +70,10 @@ class PdfTextExtractor {
     const buffer = await file.arrayBuffer();
     const mimeType = file.type || "application/pdf";
 
+    console.log(`[Extractor] Iniciando extração: ${file.name} (${mimeType})`);
+
     if (mimeType.startsWith("image/")) {
+      console.log(`[Extractor] Detectado arquivo de imagem, usando OCR...`);
       const text = await this.ocrImage(file);
       return {
         text: this.normalize(text),
@@ -79,6 +82,7 @@ class PdfTextExtractor {
       };
     }
 
+    console.log(`[Extractor] Detectado PDF, extraindo texto com PDF.js...`);
     const pdf = await pdfjsLib.getDocument({
       data: new Uint8Array(buffer),
     }).promise;
@@ -99,8 +103,10 @@ class PdfTextExtractor {
       .join("\n");
 
     const normalized = this.normalize(text);
+    console.log(`[Extractor] Texto extraído com PDF.js: ${normalized.length} caracteres`);
 
     if (!this.isValidText(normalized)) {
+      console.log(`[Extractor] Texto insuficiente (${normalized.length} chars), usando OCR...`);
       const ocrText = await this.ocrPdf(pdf);
       return {
         text: this.normalize(ocrText),
@@ -128,11 +134,23 @@ class PdfTextExtractor {
   }
 
   async ocrPdf(pdf) {
-    const worker = await Tesseract.createWorker("por");
+    console.log(`[OCR-PDF] Iniciando OCR para PDF com ${pdf.numPages} páginas...`);
+    
+    if (typeof Tesseract === "undefined") {
+      const error = "Tesseract.js não carregou. Verifique sua conexão com a internet.";
+      console.error(`[OCR-PDF] ERRO: ${error}`);
+      throw new Error(error);
+    }
+
+    let worker;
     const pagesText = [];
 
     try {
+      console.log(`[OCR-PDF] Criando worker Tesseract em português...`);
+      worker = await Tesseract.createWorker("por");
+      
       for (let pageIndex = 1; pageIndex <= Math.min(pdf.numPages, 2); pageIndex++) {
+        console.log(`[OCR-PDF] Renderizando página ${pageIndex}...`);
         const page = await pdf.getPage(pageIndex);
         const viewport = page.getViewport({ scale: 1.5 });
         const canvas = document.createElement("canvas");
@@ -141,20 +159,44 @@ class PdfTextExtractor {
         const context = canvas.getContext("2d");
 
         await page.render({ canvasContext: context, viewport }).promise;
+        
+        console.log(`[OCR-PDF] Reconhecendo texto na página ${pageIndex}...`);
         const result = await worker.recognize(canvas);
-        pagesText.push(result.data.text || "");
+        const pageText = result.data.text || "";
+        console.log(`[OCR-PDF] Página ${pageIndex}: ${pageText.length} caracteres extraídos`);
+        pagesText.push(pageText);
       }
+    } catch (error) {
+      console.error(`[OCR-PDF] ERRO durante OCR: ${error.message}`);
+      throw new Error(`Falha ao processar PDF com OCR: ${error.message}`);
     } finally {
-      await worker.terminate();
+      if (worker) {
+        console.log(`[OCR-PDF] Finalizando worker Tesseract...`);
+        await worker.terminate();
+      }
     }
 
-    return pagesText.join("\n");
+    const result = pagesText.join("\n");
+    console.log(`[OCR-PDF] OCR concluído: ${result.length} caracteres totais`);
+    return result;
   }
 
   async ocrImage(file) {
-    const worker = await Tesseract.createWorker("por");
+    console.log(`[OCR-Image] Iniciando OCR para imagem: ${file.name}...`);
+    
+    if (typeof Tesseract === "undefined") {
+      const error = "Tesseract.js não carregou. Verifique sua conexão com a internet.";
+      console.error(`[OCR-Image] ERRO: ${error}`);
+      throw new Error(error);
+    }
 
+    let worker;
+    
     try {
+      console.log(`[OCR-Image] Criando worker Tesseract em português...`);
+      worker = await Tesseract.createWorker("por");
+      
+      console.log(`[OCR-Image] Convertendo imagem para bitmap...`);
       const bitmap = await createImageBitmap(file);
       const canvas = document.createElement("canvas");
       canvas.width = bitmap.width;
@@ -162,10 +204,19 @@ class PdfTextExtractor {
       const context = canvas.getContext("2d");
       context.drawImage(bitmap, 0, 0);
 
+      console.log(`[OCR-Image] Reconhecendo texto na imagem (${bitmap.width}x${bitmap.height})...`);
       const result = await worker.recognize(canvas);
-      return result.data.text || "";
+      const text = result.data.text || "";
+      console.log(`[OCR-Image] OCR concluído: ${text.length} caracteres extraídos`);
+      return text;
+    } catch (error) {
+      console.error(`[OCR-Image] ERRO durante OCR: ${error.message}`);
+      throw new Error(`Falha ao processar imagem com OCR: ${error.message}`);
     } finally {
-      await worker.terminate();
+      if (worker) {
+        console.log(`[OCR-Image] Finalizando worker Tesseract...`);
+        await worker.terminate();
+      }
     }
   }
 }
@@ -186,20 +237,82 @@ class PatientDataExtractor {
   /**
    * Extrai nome do paciente e número de guia do texto
    * @param {string} text - Texto extraído do PDF/imagem
-   * @returns {Object} {patient: string, guide: string}
+   * @returns {Object} {patient: string, guide: string, confidence: number}
    */
   extract(text) {
-    return {
-      patient:
-        this.find(text, this.patterns.patient) ||
-        this.findByLabel(text, "Nome do Beneficiário") ||
-        this.findByLabel(text, "Paciente"),
+    const patient =
+      this.find(text, this.patterns.patient) ||
+      this.findByLabel(text, "Nome do Beneficiário") ||
+      this.findByLabel(text, "Paciente") ||
+      this.extractPatientFallback(text);
 
-      guide:
-        this.find(text, this.patterns.guide) ||
-        this.findByLabel(text, "Número da Guia no Prestador") ||
-        this.findByLabel(text, "Número da guia"),
-    };
+    const guide =
+      this.find(text, this.patterns.guide) ||
+      this.findByLabel(text, "Número da Guia no Prestador") ||
+      this.findByLabel(text, "Número da guia") ||
+      this.extractGuideFallback(text);
+
+    if (patient) {
+      console.log(`[DataExtractor] ✓ Paciente encontrado: "${patient}"`);
+    } else {
+      console.warn(`[DataExtractor] ⚠ Nenhum paciente encontrado`);
+    }
+
+    if (guide) {
+      console.log(`[DataExtractor] ✓ Guia encontrada: "${guide}"`);
+    } else {
+      console.warn(`[DataExtractor] ⚠ Nenhuma guia encontrada`);
+    }
+
+    return { patient, guide };
+  }
+
+  /**
+   * Fallback para extrair nome do paciente - procura por padrões menos rigorosos
+   * @param {string} text - Texto para buscar
+   * @returns {string} Nome encontrado ou string vazia
+   */
+  extractPatientFallback(text) {
+    // Procurar por linhas que começam com maiúscula e contêm 2-3 palavras
+    const lines = text
+      .split("\n")
+      .map(line => line.trim())
+      .filter(line => line.length > 5 && line.length < 100);
+
+    for (const line of lines) {
+      // Procurar por padrões que pareçam nomes (Palavra Palavra ou Palavra Palavra Palavra)
+      const namePattern = /^([A-ZÀÁÂÃÄÈÉÊËÌÍÎÏÒÓÔÕÖÙÚÛÜÇ][a-záàâãäèéêëìíîïòóôõöùúûüç]+\s+(?:[A-ZÀÁÂÃÄÈÉÊËÌÍÎÏÒÓÔÕÖÙÚÛÜÇ][a-záàâãäèéêëìíîïòóôõöùúûüç]+\s*)*[A-ZÀÁÂÃÄÈÉÊËÌÍÎÏÒÓÔÕÖÙÚÛÜÇ][a-záàâãäèéêëìíîïòóôõöùúûüç]+)/;
+      const match = namePattern.exec(line);
+      
+      if (match && match[1].split(/\s+/).length >= 2) {
+        console.log(`[DataExtractor] Fallback paciente encontrado: "${match[1]}"`);
+        return match[1];
+      }
+    }
+
+    return "";
+  }
+
+  /**
+   * Fallback para extrair número de guia - procura por sequências numéricas
+   * @param {string} text - Texto para buscar
+   * @returns {string} Guia encontrada ou string vazia
+   */
+  extractGuideFallback(text) {
+    // Procurar por números com 6+ dígitos que pareçam ser guias
+    const numberPattern = /\b(\d{6,12})\b/g;
+    const matches = [...text.matchAll(numberPattern)];
+
+    for (const match of matches) {
+      const num = match[1];
+      // Descartar números que parecem ser datas ou valores muito grandes
+      if (num.length >= 6 && num.length <= 10 && !num.startsWith("202") && !num.startsWith("201")) {
+        console.log(`[DataExtractor] Fallback guia encontrada: "${num}"`);
+        return num;
+      }
+    }
+
+    return "";
   }
 
   /**
@@ -600,15 +713,21 @@ class PdfProcessorController {
   }
 
   async processFile(file) {
+    console.log(`[Processor] Iniciando processamento de ${file.name}...`);
+    
     try {
+      console.log(`[Processor] Extraindo texto do arquivo...`);
       const { text } = await this.textExtractor.extract(file);
+      console.log(`[Processor] Texto extraído: ${text.length} caracteres`);
+      
+      console.log(`[Processor] Procurando dados do paciente no texto...`);
       const { patient, guide } = this.dataExtractor.extract(text);
+      console.log(`[Processor] Dados encontrados: paciente="${patient}" guide="${guide}"`);
 
       if (!patient && !guide) {
-        this.ui.renderError(
-          file.name,
-          "Não foi possível extrair o nome do paciente ou número da guia."
-        );
+        const errorMsg = "Não foi possível extrair o nome do paciente ou número da guia. Verifique se o arquivo contém essas informações.";
+        console.warn(`[Processor] AVISO: ${errorMsg}`);
+        this.ui.renderError(file.name, errorMsg);
         return;
       }
 
@@ -617,6 +736,7 @@ class PdfProcessorController {
         patient,
         guide
       );
+      console.log(`[Processor] Nome gerado: ${generatedName}`);
 
       this.ui.renderResult(
         file.name,
@@ -627,20 +747,43 @@ class PdfProcessorController {
       );
 
       this.processedFiles.push({ file, generatedName });
+      console.log(`[Processor] ✓ Arquivo ${file.name} processado com sucesso`);
     } catch (error) {
+      console.error(`[Processor] ERRO ao processar ${file.name}:`, error);
+      const errorMsg = error.message || "Erro desconhecido ao processar o arquivo";
       this.ui.renderError(
         file.name,
-        `Erro ao processar: ${error.message}`
+        `Erro ao processar: ${errorMsg}`
       );
     }
   }
 }
 
 window.addEventListener("DOMContentLoaded", () => {
+  console.log("[App] Iniciando aplicação de renomeador de guias...");
+  console.log("[App] Verificando disponibilidade de PDF.js...");
+  
   waitForPdfJs(() => {
+    console.log("[App] ✓ PDF.js disponível");
+    
     if (window.pdfjsLib?.GlobalWorkerOptions) {
       window.pdfjsLib.GlobalWorkerOptions.workerSrc =
         "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+      console.log("[App] ✓ Worker PDF.js configurado");
+    }
+
+    // Verificar Tesseract.js
+    if (typeof Tesseract !== "undefined") {
+      console.log("[App] ✓ Tesseract.js disponível");
+    } else {
+      console.warn("[App] ⚠ Tesseract.js não detectado - OCR pode não funcionar");
+    }
+
+    // Verificar JSZip
+    if (typeof JSZip !== "undefined") {
+      console.log("[App] ✓ JSZip disponível");
+    } else {
+      console.warn("[App] ⚠ JSZip não detectado - Download em ZIP pode não funcionar");
     }
 
     const uiRenderer = new UIRenderer(UI_ELEMENTS);
@@ -658,7 +801,10 @@ window.addEventListener("DOMContentLoaded", () => {
     });
 
     UI_ELEMENTS.processButton.addEventListener("click", () => {
+      console.log("[App] Usuário clicou em Processar PDFs");
       controller.process(Array.from(UI_ELEMENTS.input.files));
     });
+    
+    console.log("[App] ✓ Aplicação inicializada com sucesso");
   });
 });
